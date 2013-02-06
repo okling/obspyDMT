@@ -1,0 +1,16 @@
+CHANGELOG.txt
+LICENSE.txt
+MANIFEST.in
+README.rst
+README.txt
+setup.py
+obspyDMT/__init__.py
+obspyDMT/compareDMT.py
+obspyDMT/obspyDMT.py
+obspyDMT/obspyDMT_managing_node.py
+obspyDMT/obspyNC.py
+obspyDMT.egg-info/PKG-INFO
+obspyDMT.egg-info/SOURCES.txt
+obspyDMT.egg-info/dependency_links.txt
+obspyDMT.egg-info/entry_points.txt
+obspyDMT.egg-info/top_level.txt

@@ -1,0 +1,6 @@
+[console_scripts]
+compareDMT = obspyDMT.compareDMT:main
+obspyDMT_managing_node = obspyDMT.obspyDMT_managing_node:main
+obspyDMT = obspyDMT.obspyDMT:main
+obspyNC = obspyDMT.obspyNC:main
+
