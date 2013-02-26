@@ -5,27 +5,15 @@ obspyDMT main program
 
 :copyright:
     Kasra Hosseini (hosseini@geophysik.uni-muenchen.de),
-    Lion Krischer (krischer@geophysik.uni-muenchen.de), 2011-2013
+    Lion Krischer (krischer@geophysik.uni-muenchen.de),
+    2011-2013
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/licenses/gpl-3.0-standalone.html)
 """
 import argparse
-import commands
 from datetime import datetime
-import fnmatch
-import matplotlib
-import numpy as np
-import obspy
-from obspy import read, UTCDateTime
-from obspy.signal import seisSim, invsim
-from optparse import OptionParser
-import pickle
-import pprocess
 import os
-import scipy
-import shutil
-import subprocess
 import sys
 import time
 
@@ -37,33 +25,10 @@ import time
 VERSION = "0.4.0a"
 
 
-def obspyDMT(**kwargs):
+def obspyDMT(*args, **kwargs):
     """
     """
-    # ------------------Getting List of Events/Continuous requests------
-    if input['get_events'] == 'Y':
-        get_Events(input, request='event-based')
-
-    if input['get_continuous'] == 'Y':
-        get_Events(input, request='continuous')
-
-
-
-def command_parse():
-    """
-    Parsing command-line options.
-    """
-    # create command line option parser
-    parser = OptionParser("%prog [options]")
-
-    helpmsg = "show the obspyDMT version and exit"
-    parser.add_option("--version", action="store_true",
-                      dest="version", help=helpmsg)
-
-    helpmsg = "Run a quick tour!"
-    parser.add_option("--tour", action="store_true",
-                      dest="tour", help=helpmsg)
-
+    parser = 1
     helpmsg = "the path where obspyDMT will store the data " + \
         "[Default: './obspyDMT-data']"
     parser.add_option("--datapath", action="store", dest="datapath",
@@ -79,46 +44,19 @@ def command_parse():
     parser.add_option("--max_date", action="store",
                       dest="max_date", help=helpmsg)
 
-
     helpmsg = "Just retrieve the event information and create an event " + \
         "archive."
     parser.add_option("--event_info", action="store_true",
                       dest="event_info", help=helpmsg)
 
-    helpmsg = "Create a seismicity map according to the event and " + \
-        "location specifications."
-    parser.add_option("--seismicity", action="store_true",
-                      dest="seismicity", help=helpmsg)
-
-    helpmsg = "event-based request (please refer to the tutorial). " + \
-        "[Default: 'Y']"
-    parser.add_option("--get_events", action="store", dest="get_events",
-                      help=helpmsg)
-
-    helpmsg = "continuous request (please refer to the tutorial)."
-    parser.add_option("--continuous", action="store_true",
-                      dest="get_continuous", help=helpmsg)
 
     helpmsg = "time interval for dividing the continuous request. " + \
         "[Default: 86400 sec (1 day)]"
     parser.add_option("--interval", action="store", dest="interval",
                       help=helpmsg)
 
-    helpmsg = "Parallel waveform/response/paz request"
-    parser.add_option("--req_parallel", action="store_true",
-                      dest="req_parallel", help=helpmsg)
-
     helpmsg = "Number of processors to be used in --req_parallel. [Default: 4]"
     parser.add_option("--req_np", action="store", dest="req_np", help=helpmsg)
-
-    helpmsg = "using the IRIS bulkdataselect Web service. Since this " + \
-        "method returns multiple channels of time series data " + \
-        "for specified time ranges in one request, it speeds up " + \
-        "the waveform retrieving approximately by a factor of " + \
-        "two. [RECOMMENDED]"
-    parser.add_option("--iris_bulk", action="store_true",
-                      dest="iris_bulk", help=helpmsg)
-
 
     helpmsg = "retrieve the waveform. [Default: 'Y']"
     parser.add_option("--waveform", action="store",
@@ -131,12 +69,6 @@ def command_parse():
     helpmsg = "retrieve the PAZ."
     parser.add_option("--paz", action="store_true",
                       dest="paz", help=helpmsg)
-
-    helpmsg = "MSEED format for saving the waveforms."
-    parser.add_option("--mseed", action="store_true",
-                      dest="mseed", help=helpmsg)
-
-
 
     helpmsg = "time parameter in seconds which determines how close " + \
                 "the time series data (waveform) will be cropped " + \
@@ -172,9 +104,6 @@ def command_parse():
                 " Currently, ArcLink does not support this option!"
     parser.add_option("--station_circle", action="store",
                       dest="station_circle", help=helpmsg)
-
-
-
 
     helpmsg = "apply a bandpass filter to the data trace before " + \
                 "deconvolution ('None' if you do not need pre_filter), " + \
@@ -220,39 +149,35 @@ def main():
 
     status = obspyDMT()
 
-    try:
-        global input, events
-        size = get_folder_size(input['datapath'])
-        size /= 1024 ** 2
+    input, events = None
 
-        t_pro = time.time() - t1_pro
+    size = get_folder_size(input['datapath'])
+    size /= 1024 ** 2
 
-        print "\n\n--------------------------------------------------"
-        print "Info:"
-        print "* The following folder contains %f MB of data." % (size)
-        print input['datapath']
-        print "\n* Total time:"
-        print "%f sec" % (t_pro)
-        print "--------------------------------------------------"
-       # -------------------------------------------------------------------
-        Period = input['min_date'].split('T')[0] + '_' + \
-                    input['max_date'].split('T')[0] + '_' + \
-                    str(input['min_mag']) + '_' + str(input['max_mag'])
-        eventpath = os.path.join(input['datapath'], Period)
+    t_pro = time.time() - t1_pro
 
-        address = []
-        for event in events:
-            address.append(os.path.join(eventpath, event['event_id']))
-       # -------------------------------------------------------------------
-        if address != []:
-            print "* Address of the stored events:"
-            for i in range(len(events)):
-                print address[i]
-            print 50 * "-"
+    print "\n\n--------------------------------------------------"
+    print "Info:"
+    print "* The following folder contains %f MB of data." % (size)
+    print input['datapath']
+    print "\n* Total time:"
+    print "%f sec" % (t_pro)
+    print "--------------------------------------------------"
+   # -------------------------------------------------------------------
+    Period = input['min_date'].split('T')[0] + '_' + \
+                input['max_date'].split('T')[0] + '_' + \
+                str(input['min_mag']) + '_' + str(input['max_mag'])
+    eventpath = os.path.join(input['datapath'], Period)
 
-    except Exception as e:
-        print e
-        pass
+    address = []
+    for event in events:
+        address.append(os.path.join(eventpath, event['event_id']))
+   # -------------------------------------------------------------------
+    if address != []:
+        print "* Address of the stored events:"
+        for i in range(len(events)):
+            print address[i]
+        print 50 * "-"
 
     sys.exit(status)
 
@@ -279,7 +204,7 @@ def parse_arguments():
     event_options.add_argument("--max_depth", type=float, default=6000,
         help="maximum depth in km. Values increase positively with depth")
     event_options.add_argument("--max_results", type=int, default=2500,
-        help= "maximum number of events to be requested")
+        help="maximum number of events to be requested")
     event_options.add_argument("--catalog", type=str, default="EMSC",
         choices=["EMSC", "IRIS", "GCMT", "TEST", "ISC", "UofW", "NEIC", "PDE"],
         help="event catalog to query, one of EMSC, IRIS - contains the "
@@ -288,8 +213,11 @@ def parse_arguments():
     event_options.add_argument("--mag_type", type=str, default="Mw",
         help="magnitude type. Available options depend on the catalog and "
             "include Ml/MD, mb, Mw, ...")
-    # Define the rectangular selection format.
+
     def rectangular_selection(string):
+        """
+        Define the rectangular selection format.
+        """
         msg = ("'%s' is not a valid rectangle. Needs to be given as "
             "'<lonmin>/<lonmax>/<latmin>/<latmax>'")
         try:
@@ -303,8 +231,11 @@ def parse_arguments():
         default="-180.0/+180.0/-90.0/+90.0",
         help="Search for events in the defined rectangular region. "
             "GMT syntax: <lonmin>/<lonmax>/<latmin>/<latmax>")
-    # Define the circular section.
+
     def circular_selection(string):
+        """
+        Define the circular section.
+        """
         msg = ("'%s' is not a valid circular selection. Needs to be given as "
             "'<lon>/<lat>/<rmin>/<rmax>'")
         try:
@@ -320,11 +251,10 @@ def parse_arguments():
         help="epicentral distance circle, radius is given in degree. "
         "Syntax: <lon>/<lat>/<rmin>/<rmax>")
 
-
     args = parser.parse_args()
 
     # Print help message if no argument is given.
-    if len(sys.argv)==1:
+    if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 

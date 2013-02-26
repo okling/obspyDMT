@@ -18,9 +18,7 @@ setup_config = dict(
         "of the modular nature, different functionalities could be added "
         " easily and/or each obspyDMT can be used as a module for other "
         "programs."),
-    install_requires=[
-        "obspy>=0.8.3",
-        "pprocess"],
+    install_requires=["obspy>=0.8.3"],
     packages=["obspyDMT"],
     package_dir={"obspyDMT": "obspyDMT"},
     keywords=["obspyDMT", "ObsPy", "Seismology"],
