@@ -225,11 +225,6 @@ def command_parse():
     parser.add_option("--version", action="store_true",
                       dest="version", help=helpmsg)
 
-    helpmsg = "check all the dependencies and their installed versions " + \
-        "on the local machine and exit"
-    parser.add_option("--check", action="store_true",
-                      dest="check", help=helpmsg)
-
     helpmsg = "Run a quick tour!"
     parser.add_option("--tour", action="store_true",
                       dest="tour", help=helpmsg)
@@ -785,21 +780,6 @@ def read_input_command(parser, **kwargs):
         print '\t\t' + '*********************************'
         print '\n'
         sys.exit(2)
-
-    # Check whether it is possible to import all required modules
-    if options.check:
-        descrip = []
-        descrip.append('obspy ver: ' + obspy.__version__)
-        descrip.append('numpy ver: ' + np.__version__)
-        descrip.append('scipy ver: ' + scipy.__version__)
-        descrip.append('matplotlib ver: ' + matplotlib.__version__)
-
-        print "*********************************"
-        print "Check all the BASIC dependencies:"
-        for i in range(0, len(descrip)):
-            print descrip[i]
-        print "*********************************\n"
-        sys.exit(0)
 
     if options.tour:
         print '\n########################################'
