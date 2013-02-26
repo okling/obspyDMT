@@ -74,7 +74,7 @@ def obspyDMT(**kwargs):
     """
 
     print '\n------------------------------------------------------------' + \
-            '---------------------'
+        '---------------------'
     print '\t\t' + 'obspyDMT (ObsPy Data Management Tool)' + '\n'
     print '\t' + 'Automatic tool for Downloading, Processing and Management'
     print '\t\t\t' + 'of Large Seismic Datasets'
@@ -87,11 +87,10 @@ def obspyDMT(**kwargs):
     print 'GNU General Public License, Version 3'
     print '(http://www.gnu.org/licenses/gpl-3.0-standalone.html)'
     print '------------------------------------------------------------' + \
-            '---------------------'
+        '---------------------'
 
     # global variables
     global input, events
-
 
     # ------------------Parsing command-line options--------------------
     (options, args, parser) = command_parse()
@@ -104,10 +103,10 @@ def obspyDMT(**kwargs):
 
     # ------------------Getting List of Events/Continuous requests------
     if input['get_events'] == 'Y':
-        get_Events(input, request = 'event-based')
+        get_Events(input, request='event-based')
 
     if input['get_continuous'] == 'Y':
-        get_Events(input, request = 'continuous')
+        get_Events(input, request='continuous')
 
     # ------------------Seismicity--------------------------------------
     if input['seismicity'] == 'Y':
@@ -184,8 +183,8 @@ def obspyDMT(**kwargs):
         IRIS_ARC_merge(input, clients='arc')
 
     # ------------------PLOT--------------------------------------------
-    for i in ['plot_se', 'plot_sta', 'plot_ev', 'plot_ray', 'plot_ray_gmt', \
-                'plot_epi', 'plot_dt']:
+    for i in ['plot_se', 'plot_sta', 'plot_ev', 'plot_ray', 'plot_ray_gmt',
+              'plot_epi', 'plot_dt']:
         if input[i] != 'N':
 
             print '\n*********************'
@@ -193,9 +192,9 @@ def obspyDMT(**kwargs):
             print '*********************'
 
             if input['plot_all'] == 'Y' or input['plot_iris'] == 'Y':
-                PLOT(input, clients = 'iris')
+                PLOT(input, clients='iris')
             if input['plot_arc'] == 'Y':
-                PLOT(input, clients = 'arc')
+                PLOT(input, clients='arc')
 
     # ------------------Email-------------------------------------------
     if input['email'] != 'N':
@@ -210,7 +209,7 @@ def obspyDMT(**kwargs):
         t2_str = datetime.now()
         t_pro = t2_pro - t1_pro
         msg = "Request at: \n" + str(t1_str) + "\n\nFinished at \n" + \
-                str(t2_str) + "\n\n" + "Total time: " + "\n" + str(t_pro)
+            str(t2_str) + "\n\n" + "Total time: " + "\n" + str(t_pro)
         send_email(input["email"], msg)
 
 
@@ -226,7 +225,7 @@ def command_parse():
                       dest="version", help=helpmsg)
 
     helpmsg = "check all the dependencies and their installed versions " + \
-                                        "on the local machine and exit"
+        "on the local machine and exit"
     parser.add_option("--check", action="store_true",
                       dest="check", help=helpmsg)
 
@@ -235,9 +234,9 @@ def command_parse():
                       dest="tour", help=helpmsg)
 
     helpmsg = "type of the input ('command' or 'file') to be read by " + \
-                "obspyDMT. Please note that for \"--type 'file'\" an " + \
-                "external file ('INPUT.cfg') should exist in the same " + \
-                "directory as obspyDMT.py [Default: command] "
+        "obspyDMT. Please note that for \"--type 'file'\" an " + \
+        "external file ('INPUT.cfg') should exist in the same " + \
+        "directory as obspyDMT.py [Default: command] "
     parser.add_option("--type", action="store",
                       dest="type", help=helpmsg)
 
@@ -246,29 +245,28 @@ def command_parse():
                       dest="reset", help=helpmsg)
 
     helpmsg = "the path where obspyDMT will store the data " + \
-                                        "[Default: './obspyDMT-data']"
-    parser.add_option("--datapath", action="store",
-                      dest="datapath", help=helpmsg)
+        "[Default: './obspyDMT-data']"
+    parser.add_option("--datapath", action="store", dest="datapath",
+                      help=helpmsg)
 
     helpmsg = "start time, syntax: Y-M-D-H-M-S (eg: " + \
-                "'2010-01-01-00-00-00') or just Y-M-D [Default: 10 days ago]"
+        "'2010-01-01-00-00-00') or just Y-M-D [Default: 10 days ago]"
     parser.add_option("--min_date", action="store",
                       dest="min_date", help=helpmsg)
 
     helpmsg = "end time, syntax: Y-M-D-H-M-S (eg: " + \
-                "'2011-01-01-00-00-00') or just Y-M-D [Default: 5 days ago]"
+        "'2011-01-01-00-00-00') or just Y-M-D [Default: 5 days ago]"
     parser.add_option("--max_date", action="store",
                       dest="max_date", help=helpmsg)
 
-    helpmsg = "event catalog (EMSC or IRIS). " + \
-                "[Default: 'EMSC']"
+    helpmsg = "event catalog (EMSC or IRIS). [Default: 'EMSC']"
     parser.add_option("--event_catalog", action="store",
                       dest="event_catalog", help=helpmsg)
 
     helpmsg = "magnitude type. Some common types (there are many) " + \
-                "include 'Ml' (local/Richter magnitude), " + \
-                "'Ms' (surface magnitude), 'mb' (body wave magnitude), " + \
-                "'Mw' (moment magnitude). [Default: 'Mw']"
+        "include 'Ml' (local/Richter magnitude), " + \
+        "'Ms' (surface magnitude), 'mb' (body wave magnitude), " + \
+        "'Mw' (moment magnitude). [Default: 'Mw']"
     parser.add_option("--mag_type", action="store",
                       dest="mag_type", help=helpmsg)
 
@@ -289,16 +287,16 @@ def command_parse():
                       dest="max_depth", help=helpmsg)
 
     helpmsg = "search for all the events within the defined rectangle, " + \
-                "GMT syntax: <lonmin>/<lonmax>/<latmin>/<latmax> " + \
-                "[Default: -180.0/+180.0/-90.0/+90.0]"
+        "GMT syntax: <lonmin>/<lonmax>/<latmin>/<latmax> " + \
+        "[Default: -180.0/+180.0/-90.0/+90.0]"
     parser.add_option("--event_rect", action="store", dest="event_rect",
-                        help=helpmsg)
+                      help=helpmsg)
 
     helpmsg = "search for all the events within the defined " + \
-                "circle, syntax: <lon>/<lat>/<rmin>/<rmax>. " + \
-                "May not be used together with rectangular " + \
-                "bounding box event restrictions (event_rect). " + \
-                "[currently just IRIS support this option]"
+        "circle, syntax: <lon>/<lat>/<rmin>/<rmax>. " + \
+        "May not be used together with rectangular " + \
+        "bounding box event restrictions (event_rect). " + \
+        "[currently just IRIS support this option]"
     parser.add_option("--event_circle", action="store",
                       dest="event_circle", help=helpmsg)
 
@@ -306,41 +304,42 @@ def command_parse():
     parser.add_option("--max_result", action="store",
                       dest="max_result", help=helpmsg)
 
-    helpmsg = "Just retrieve the event information and create an event archive."
+    helpmsg = "Just retrieve the event information and create an event " + \
+        "archive."
     parser.add_option("--event_info", action="store_true",
                       dest="event_info", help=helpmsg)
 
     helpmsg = "Create a seismicity map according to the event and " + \
-                "location specifications."
+        "location specifications."
     parser.add_option("--seismicity", action="store_true",
                       dest="seismicity", help=helpmsg)
 
-    helpmsg = "event-based request (please refer to the tutorial). [Default: 'Y']"
-    parser.add_option("--get_events", action="store",
-                      dest="get_events", help=helpmsg)
+    helpmsg = "event-based request (please refer to the tutorial). " + \
+        "[Default: 'Y']"
+    parser.add_option("--get_events", action="store", dest="get_events",
+                      help=helpmsg)
 
     helpmsg = "continuous request (please refer to the tutorial)."
     parser.add_option("--continuous", action="store_true",
                       dest="get_continuous", help=helpmsg)
 
     helpmsg = "time interval for dividing the continuous request. " + \
-                "[Default: 86400 sec (1 day)]"
-    parser.add_option("--interval", action="store",
-                      dest="interval", help=helpmsg)
+        "[Default: 86400 sec (1 day)]"
+    parser.add_option("--interval", action="store", dest="interval",
+                      help=helpmsg)
 
     helpmsg = "Parallel waveform/response/paz request"
     parser.add_option("--req_parallel", action="store_true",
                       dest="req_parallel", help=helpmsg)
 
     helpmsg = "Number of processors to be used in --req_parallel. [Default: 4]"
-    parser.add_option("--req_np", action="store",
-                        dest="req_np", help=helpmsg)
+    parser.add_option("--req_np", action="store", dest="req_np", help=helpmsg)
 
     helpmsg = "using the IRIS bulkdataselect Web service. Since this " + \
-                "method returns multiple channels of time series data " + \
-                "for specified time ranges in one request, it speeds up " + \
-                "the waveform retrieving approximately by a factor of " + \
-                "two. [RECOMMENDED]"
+        "method returns multiple channels of time series data " + \
+        "for specified time ranges in one request, it speeds up " + \
+        "the waveform retrieving approximately by a factor of " + \
+        "two. [RECOMMENDED]"
     parser.add_option("--iris_bulk", action="store_true",
                       dest="iris_bulk", help=helpmsg)
 
@@ -2680,8 +2679,8 @@ def IRIS_ARC_merge(input, clients):
         for i in range(0, len(address_events)):
             ls_address.append(os.path.join(address_events[i], BH_file))
         print '-----------------------------'
-        merge_stream(ls_address = ls_address, ls_sta = ls_sta, \
-                                                    network_name = network_name)
+        merge_stream(ls_address=ls_address, ls_sta=ls_sta,
+            network_name=network_name)
         print 'DONE'
         print '*****************************'
     else:
