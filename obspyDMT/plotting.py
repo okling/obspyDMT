@@ -20,6 +20,71 @@ except ImportError as error:
                     'You could not use the Plot module')
 
 
+def seismicity(input, events):
+
+    """
+    Create a seismicity map
+    """
+    print '\n###################'
+    print 'Seismicity map mode'
+    print '###################\n'
+
+    m = Basemap(projection='cyl', llcrnrlat=input['evlatmin'],\
+        urcrnrlat=input['evlatmax'], llcrnrlon=input['evlonmin'],\
+        urcrnrlon=input['evlonmax'], resolution='l')
+
+    m.drawcoastlines()
+    m.fillcontinents()
+    m.drawparallels(np.arange(-90., 120., 30.))
+    m.drawmeridians(np.arange(0., 420., 60.))
+    m.drawmapboundary()
+
+    # Defining Labels:
+    x_ev, y_ev = m(-360, 0)
+    m.scatter(x_ev, y_ev, 20, color='red', marker="o",
+                edgecolor="black", zorder=10, label='0-70km')
+    m.scatter(x_ev, y_ev, 20, color='green', marker="o", \
+                edgecolor="black", zorder=10, label='70-300km')
+    m.scatter(x_ev, y_ev, 20, color='blue', marker="o", \
+                edgecolor="black", zorder=10, label='300< km')
+
+    m.scatter(x_ev, y_ev, 5, color='white', marker="o", \
+                edgecolor="black", zorder=10, label='<=4.0')
+    m.scatter(x_ev, y_ev, 20, color='white', marker="o", \
+                edgecolor="black", zorder=10, label='4.0-5.0')
+    m.scatter(x_ev, y_ev, 35, color='white', marker="o", \
+                edgecolor="black", zorder=10, label='5.0-6.0')
+    m.scatter(x_ev, y_ev, 50, color='white', marker="o", \
+                edgecolor="black", zorder=10, label='6.0<')
+
+    for i in range(len(events)):
+        x_ev, y_ev = m(float(events[i]['longitude']),
+                float(events[i]['latitude']))
+        if abs(float(events[i]['depth'])) <= 70.0:
+            color = 'red'
+        elif 70.0 < abs(float(events[i]['depth'])) <= 300.0:
+            color = 'green'
+        elif 300.0 < abs(float(events[i]['depth'])) <= 1000.0:
+            color = 'blue'
+
+        if float(events[i]['magnitude']) <= 4.0:
+            size = 5
+        elif 4.0 < float(events[i]['magnitude']) <= 5.0:
+            size = 20
+        elif 5.0 < float(events[i]['magnitude']) <= 6.0:
+            size = 35
+        elif 6.0 < float(events[i]['magnitude']):
+            size = 50
+
+        m.scatter(x_ev, y_ev, size,\
+                color=color, marker="o", \
+                edgecolor="black", zorder=10)
+
+    plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.)
+
+    plt.show()
+
+
 def PLOT(input, clients):
 
     """
