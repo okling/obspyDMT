@@ -22,7 +22,7 @@ setup_config = dict(
         "obspy>=0.8.3",
         "pprocess"],
     packages=["obspyDMT"],
-    package_dir={"obspyDMT":  "obspyDMT"},
+    package_dir={"obspyDMT": "obspyDMT"},
     keywords=["obspyDMT", "ObsPy", "Seismology"],
     entry_points={
         'console_scripts': [

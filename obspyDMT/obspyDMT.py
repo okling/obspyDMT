@@ -28,10 +28,12 @@ import subprocess
 import sys
 import time
 
-from obspyDMT.download_cores import IRIS_download_core
-from obspyDMT.util import get_folder_size, send_email, XML_list_avail
-from obspyDMT.event_file_handler import quake_info
-from obspyDMT.station_file_handler import read_station_event, rm_duplicate
+#from obspyDMT.download_cores import IRIS_download_core
+#from obspyDMT.util import get_folder_size, send_email, XML_list_avail
+#from obspyDMT.event_file_handler import quake_info
+#from obspyDMT.station_file_handler import read_station_event, rm_duplicate
+
+VERSION = "0.4.0a"
 
 
 def obspyDMT(**kwargs):
@@ -210,19 +212,6 @@ def obspyDMT(**kwargs):
             str(t2_str) + "\n\n" + "Total time: " + "\n" + str(t_pro)
         send_email(input["email"], msg)
 
-
-def parse_commands():
-    """
-    Parses command line options and returns the parse object.
-    """
-    parser = argparse.ArgumentParser(
-        description="Download and manage large seismological datasets")
-
-    parser.add_argument("--version", action="store_true",
-            help="output version information and exit")
-
-    args = parser.parse_args()
-    return args
 
 
 def command_parse():
@@ -2562,7 +2551,7 @@ def merge_stream(ls_address, ls_sta, network_name):
                 break
 
 
-def __main__():
+def main():
     """
     XXX: Add documentation.
     """
@@ -2609,6 +2598,34 @@ def __main__():
 
     sys.exit(status)
 
+
+def parse_arguments():
+    """
+    Parses command line options and returns the parse object.
+    """
+    parser = argparse.ArgumentParser(
+        description="Download and manage large seismological datasets")
+
+    parser.add_argument("--version", action="store_true",
+            help="output version information and exit")
+
+    args = parser.parse_args()
+
+    # Print help message if no argument is given.
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+
+    return args
+
+
+def __main__():
+    args = parse_arguments()
+    if args.version:
+        print("obspyDMT v%s" % VERSION)
+        sys.exit(0)
+
+
 if __name__ == "__main__":
-    parse_commands()
-    #__main__()
+    __main__()
+
