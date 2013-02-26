@@ -8,58 +8,36 @@
 #   Email:     hosseini@geophysik.uni-muenchen.de
 #   License:   GPLv3
 #-------------------------------------------------------------------
-
-#for debugging: import ipdb; ipdb.set_trace()
-
-#-----------------------------------------------------------------------
-#----------------Import required Modules (Python and Obspy)-------------
-#-----------------------------------------------------------------------
-
-# Required Python and Obspy modules will be imported in this part.
-
-# Added this line for python 2.5 compatibility
-from __future__ import with_statement
-import sys
-import os
-import math as math
-import fnmatch
-import time
-import random
-import shutil
-import pickle
-import glob
-import ConfigParser
-import pprocess
 import commands
-import subprocess
 from datetime import datetime
-#import multiprocessing
-from optparse import OptionParser
-
-descrip = []
-
+import fnmatch
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import obspy
 from obspy import read, UTCDateTime
 from obspy.signal import seisSim, invsim
 from obspy.xseed import Parser
-
-import numpy as np
+from optparse import OptionParser
+import pickle
+import pprocess
+import os
 import scipy
-from matplotlib import __version__ as mat_ver
-import matplotlib.pyplot as plt
-
-
-descrip.append('obspy ver: ' + obspy.__version__)
-descrip.append('numpy ver: ' + np.__version__)
-descrip.append('scipy ver: ' + scipy.__version__)
-descrip.append('matplotlib ver: ' + mat_ver)
-
+import shutil
+import subprocess
+import sys
+import time
 
 from obspyDMT.download_cores import IRIS_download_core
 from obspyDMT.util import get_folder_size, send_email, XML_list_avail
 from obspyDMT.event_file_handler import quake_info
-from obspyDMT.station_file_handler import create_station_event, \
-    read_station_event, rm_duplicate
+from obspyDMT.station_file_handler import read_station_event, rm_duplicate
+
+descrip = []
+descrip.append('obspy ver: ' + obspy.__version__)
+descrip.append('numpy ver: ' + np.__version__)
+descrip.append('scipy ver: ' + scipy.__version__)
+descrip.append('matplotlib ver: ' + matplotlib.__version__)
 
 
 def obspyDMT(**kwargs):
