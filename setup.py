@@ -27,13 +27,17 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
+    install_requires = [
+        "obspy>=0.8.3",
+        "pprocess"
+        ],
     long_description = """\
-obspyDMT (ObsPy Data Management Tool) is a command line tool for retrieving, 
-processing and management of massive seismic data in a fully automatic way 
-which could be run in serial or in parallel. 
-Moreover, complementary processing and managing tools have been 
-designed and introduced in addition to the obspyDMT options. 
-Because of the modular nature, different functionalities could be added 
+obspyDMT (ObsPy Data Management Tool) is a command line tool for retrieving,
+processing and management of massive seismic data in a fully automatic way
+which could be run in serial or in parallel.
+Moreover, complementary processing and managing tools have been
+designed and introduced in addition to the obspyDMT options.
+Because of the modular nature, different functionalities could be added
 easily and/or each obspyDMT can be used as a module for other programs.
 """
 )
