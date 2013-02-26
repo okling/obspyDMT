@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+obspyDMT main program
 
-#-------------------------------------------------------------------
-#   Filename:  obspyDMT.py
-#   Purpose:   obspyDMT main program
-#   Author:    Kasra Hosseini
-#   Email:     hosseini@geophysik.uni-muenchen.de
-#   License:   GPLv3
-#-------------------------------------------------------------------
+:copyright:
+    Kasra Hosseini (hosseini@geophysik.uni-muenchen.de), 2012-2013
+:license:
+    GNU General Public License, Version 3
+    (http://www.gnu.org/licenses/gpl-3.0-standalone.html)
+"""
+
 import commands
 from datetime import datetime
 import fnmatch
@@ -33,15 +35,8 @@ from obspyDMT.util import get_folder_size, send_email, XML_list_avail
 from obspyDMT.event_file_handler import quake_info
 from obspyDMT.station_file_handler import read_station_event, rm_duplicate
 
-descrip = []
-descrip.append('obspy ver: ' + obspy.__version__)
-descrip.append('numpy ver: ' + np.__version__)
-descrip.append('scipy ver: ' + scipy.__version__)
-descrip.append('matplotlib ver: ' + matplotlib.__version__)
-
 
 def obspyDMT(**kwargs):
-
     """
     obspyDMT: is the function dedicated to the main part of the code.
 
@@ -686,15 +681,11 @@ def command_parse():
 
 
 def read_input_command(parser, **kwargs):
-
     """
     Create input object (dictionary) based on command-line options.
     The default values are as "input" object (below)
     [same in INPUT-default.cfg]
     """
-
-    global descrip
-
     # Defining the default values.
     # Each of these values could be changed:
     # 1. By changing the 'INPUT.cfg' file (if you use
@@ -798,6 +789,12 @@ def read_input_command(parser, **kwargs):
 
     # Check whether it is possible to import all required modules
     if options.check:
+        descrip = []
+        descrip.append('obspy ver: ' + obspy.__version__)
+        descrip.append('numpy ver: ' + np.__version__)
+        descrip.append('scipy ver: ' + scipy.__version__)
+        descrip.append('matplotlib ver: ' + matplotlib.__version__)
+
         print "*********************************"
         print "Check all the BASIC dependencies:"
         for i in range(0, len(descrip)):
