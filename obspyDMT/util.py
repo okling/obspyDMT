@@ -78,12 +78,16 @@ def create_folders_files(events, eventpath):
     """
     for event in events:
         if os.path.exists(os.path.join(eventpath, event['event_id'])):
+            input_str = ('Folder for -- the requested Period (min/max) '
+                         'and Magnitude (min/max) -- exists in your '
+                         'directory.\n\n'
+                         'You could either close the program and try '
+                         'updating your '
+                         'folder OR remove the tree, continue the program '
+                         'and download '
+                         'again.\nDo you want to continue? (Y/N)\n')
 
-            if raw_input('Folder for -- the requested Period (min/max) '
-            'and Magnitude (min/max) -- exists in your directory.\n\n'
-            'You could either close the program and try updating your '
-            'folder OR remove the tree, continue the program and download '
-            'again.\nDo you want to continue? (Y/N)\n').upper() == 'Y':
+            if raw_input(input_str).upper() == 'Y':
                 print 50 * "-"
                 shutil.rmtree(os.path.join(eventpath, event['event_id']))
 
@@ -117,44 +121,43 @@ def create_folders_files(events, eventpath):
                             'info', 'quake'), 'a+')
 
         quake_file.writelines(repr(event['datetime'].year).rjust(15)
-                + repr(event['datetime'].julday).rjust(15) + '\n')
+            + repr(event['datetime'].julday).rjust(15) + '\n')
         quake_file.writelines(repr(event['datetime'].hour).rjust(15)
-                + repr(event['datetime'].minute).rjust(15) +
-                repr(event['datetime'].second).rjust(15) +
-                repr(event['datetime'].microsecond).rjust(15) + '\n')
+            + repr(event['datetime'].minute).rjust(15) +
+            repr(event['datetime'].second).rjust(15) +
+            repr(event['datetime'].microsecond).rjust(15) + '\n')
 
         quake_file.writelines(
-                ' ' * (15 - len('%.5f' % event['latitude'])) + '%.5f'
-                % event['latitude'] +
-                ' ' * (15 - len('%.5f' % event['longitude'])) + '%.5f'
-                % event['longitude'] + '\n')
+            ' ' * (15 - len('%.5f' % event['latitude'])) + '%.5f'
+            % event['latitude'] +
+            ' ' * (15 - len('%.5f' % event['longitude'])) + '%.5f'
+            % event['longitude'] + '\n')
         quake_file.writelines(
-                ' ' * (15 - len('%.5f' % abs(event['depth']))) + '%.5f'
-                % abs(event['depth']) + '\n')
+            ' ' * (15 - len('%.5f' % abs(event['depth']))) + '%.5f'
+            % abs(event['depth']) + '\n')
         quake_file.writelines(
-                ' ' * (15 - len('%.5f' % abs(event['magnitude']))) + '%.5f'
-                % abs(event['magnitude']) + '\n')
-        quake_file.writelines(\
-                ' ' * (15 - len(event['event_id'])) + \
-                        event['event_id'] + '-' + '\n')
+            ' ' * (15 - len('%.5f' % abs(event['magnitude']))) + '%.5f'
+            % abs(event['magnitude']) + '\n')
+        quake_file.writelines(' ' * (15 - len(event['event_id'])) +
+            event['event_id'] + '-' + '\n')
 
-        quake_file.writelines(repr(event['t1'].year).rjust(15)\
-                + repr(event['t1'].julday).rjust(15) \
-                + repr(event['t1'].month).rjust(15) \
-                + repr(event['t1'].day).rjust(15) + '\n')
-        quake_file.writelines(repr(event['t1'].hour).rjust(15)\
-                + repr(event['t1'].minute).rjust(15) + \
-                repr(event['t1'].second).rjust(15) + \
-                repr(event['t1'].microsecond).rjust(15) + '\n')
+        quake_file.writelines(repr(event['t1'].year).rjust(15)
+            + repr(event['t1'].julday).rjust(15)
+            + repr(event['t1'].month).rjust(15)
+            + repr(event['t1'].day).rjust(15) + '\n')
+        quake_file.writelines(repr(event['t1'].hour).rjust(15)
+            + repr(event['t1'].minute).rjust(15) +
+            repr(event['t1'].second).rjust(15) +
+            repr(event['t1'].microsecond).rjust(15) + '\n')
 
-        quake_file.writelines(repr(event['t2'].year).rjust(15)\
-                + repr(event['t2'].julday).rjust(15) \
-                + repr(event['t2'].month).rjust(15) \
-                + repr(event['t2'].day).rjust(15) + '\n')
-        quake_file.writelines(repr(event['t2'].hour).rjust(15)\
-                + repr(event['t2'].minute).rjust(15) + \
-                repr(event['t2'].second).rjust(15) + \
-                repr(event['t2'].microsecond).rjust(15) + '\n')
+        quake_file.writelines(repr(event['t2'].year).rjust(15)
+            + repr(event['t2'].julday).rjust(15)
+            + repr(event['t2'].month).rjust(15)
+            + repr(event['t2'].day).rjust(15) + '\n')
+        quake_file.writelines(repr(event['t2'].hour).rjust(15)
+            + repr(event['t2'].minute).rjust(15) +
+            repr(event['t2'].second).rjust(15) +
+            repr(event['t2'].microsecond).rjust(15) + '\n')
 
 
 def XML_list_avail(xmlfile):
