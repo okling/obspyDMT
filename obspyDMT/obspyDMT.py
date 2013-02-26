@@ -9,17 +9,15 @@ obspyDMT main program
     GNU General Public License, Version 3
     (http://www.gnu.org/licenses/gpl-3.0-standalone.html)
 """
-
+import argparse
 import commands
 from datetime import datetime
 import fnmatch
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import obspy
 from obspy import read, UTCDateTime
 from obspy.signal import seisSim, invsim
-from obspy.xseed import Parser
 from optparse import OptionParser
 import pickle
 import pprocess
@@ -211,6 +209,20 @@ def obspyDMT(**kwargs):
         msg = "Request at: \n" + str(t1_str) + "\n\nFinished at \n" + \
             str(t2_str) + "\n\n" + "Total time: " + "\n" + str(t_pro)
         send_email(input["email"], msg)
+
+
+def parse_commands():
+    """
+    Parses command line options and returns the parse object.
+    """
+    parser = argparse.ArgumentParser(
+        description="Download and manage large seismological datasets")
+
+    parser.add_argument("--version", action="store_true",
+            help="output version information and exit")
+
+    args = parser.parse_args()
+    return args
 
 
 def command_parse():
@@ -1817,178 +1829,6 @@ def ARC_available(input, event, target_path, event_number):
     return Sta_arc
 
 
-def ARC_download_core(i, j, dic, type, len_events, events, add_event, Sta_req,
-    input):
-    """
-    XXX: Add documentation.
-    """
-    print '------------------'
-    print type
-    print 'ArcLink-Event and Station Numbers are:'
-    print str(i + 1) + '/' + str(len_events) + '-' + str(j + 1) + '/' + \
-            str(len(Sta_req)) + '-' + input['cha']
-
-    try:
-        dummy = 'Initializing'
-
-        client_arclink = Client_arclink(timeout=5)
-
-        t11 = datetime.now()
-
-        if input['waveform'] == 'Y':
-            dummy = 'Waveform'
-
-            try:
-                client_arclink.saveWaveform(os.path.join(add_event[i], \
-                    'BH_RAW', \
-                    Sta_req[j][0] + '.' + Sta_req[j][1] + '.' + \
-                    Sta_req[j][2] + '.' + Sta_req[j][3]), \
-                    Sta_req[j][0], Sta_req[j][1], \
-                    Sta_req[j][2], Sta_req[j][3], \
-                    events[i]['t1'], events[i]['t2'])
-
-            except Exception as e:
-                print e
-
-                if input['NERIES'] == 'Y':
-                    print "\nWaveform is not available in ArcLink, " + \
-                        "trying NERIES!\n"
-                    client_neries.saveWaveform(os.path.join(add_event[i],
-                        'BH_RAW',
-                        Sta_req[j][0] + '.' + Sta_req[j][1] + '.' +
-                        Sta_req[j][2] + '.' + Sta_req[j][3]),
-                        Sta_req[j][0], Sta_req[j][1],
-                        Sta_req[j][2], Sta_req[j][3],
-                        events[i]['t1'], events[i]['t2'])
-
-            check_file = open(os.path.join(add_event[i], 'BH_RAW', \
-                Sta_req[j][0] + '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3]))
-            check_file.close()
-
-            print "Saving Waveform for: " + Sta_req[j][0] + \
-                '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3] + "  ---> DONE"
-
-        if input['response'] == 'Y':
-            dummy = 'Response'
-
-            client_arclink.saveResponse(os.path.join(add_event[i], \
-                'Resp', 'RESP' + \
-                '.' + Sta_req[j][0] + '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3]), \
-                Sta_req[j][0], Sta_req[j][1], \
-                Sta_req[j][2], Sta_req[j][3], \
-                events[i]['t1'], events[i]['t2'])
-
-            sp = Parser(os.path.join(add_event[i], \
-                'Resp', 'RESP' + '.' + Sta_req[j][0] + \
-                '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3]))
-
-            sp.writeRESP(os.path.join(add_event[i], 'Resp'))
-
-            print "Saving Response for: " + Sta_req[j][0] + \
-                '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3] + "  ---> DONE"
-
-        if input['paz'] == 'Y':
-            dummy = 'PAZ'
-
-            paz_arc = client_arclink.getPAZ(\
-                Sta_req[j][0], Sta_req[j][1], \
-                Sta_req[j][2], Sta_req[j][3], \
-                time=events[i]['t1'])
-
-            paz_file = open(\
-                os.path.join(add_event[i], 'Resp', 'PAZ' + '.' + \
-                Sta_req[j][0] + '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + \
-                Sta_req[j][3] + '.' + 'paz'), 'w')
-            pickle.dump(paz_arc, paz_file)
-            paz_file.close()
-
-            print "Saving PAZ for     : " + Sta_req[j][0] + \
-                '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3] + "  ---> DONE"
-
-        dummy = 'Meta-data'
-
-        dic[j] = {'info': Sta_req[j][0] + '.' + Sta_req[j][1] +
-            '.' + Sta_req[j][2] + '.' + Sta_req[j][3],
-            'net': Sta_req[j][0], 'sta': Sta_req[j][1],
-            'latitude': Sta_req[j][4], 'longitude': Sta_req[j][5],
-            'loc': Sta_req[j][2], 'cha': Sta_req[j][3],
-            'elevation': Sta_req[j][6], 'depth': Sta_req[j][7]}
-
-        Syn_file = open(os.path.join(add_event[i], \
-                            'info', 'station_event'), 'a')
-        syn = Sta_req[j][0] + ',' + Sta_req[j][1] + ',' + \
-            Sta_req[j][2] + ',' + Sta_req[j][3] + ',' + \
-            str(Sta_req[j][4]) + ',' + str(Sta_req[j][5]) + \
-            ',' + str(Sta_req[j][6]) + ',' + \
-            str(Sta_req[j][7]) + ',' + events[i]['event_id'] + \
-            ',' + str(events[i]['latitude']) \
-             + ',' + str(events[i]['longitude']) + ',' + \
-             str(events[i]['depth']) + ',' + \
-             str(events[i]['magnitude']) + ',' + 'arc' + ',' + '\n'
-        Syn_file.writelines(syn)
-        Syn_file.close()
-        print "Saving Station  for: " + Sta_req[j][0] + '.' + \
-            Sta_req[j][1] + '.' + \
-            Sta_req[j][2] + '.' + Sta_req[j][3] + "  ---> DONE"
-
-        t22 = datetime.now()
-
-        if input['time_arc'] == 'Y':
-            time_arc = t22 - t11
-            time_file = open(os.path.join(add_event[i], \
-                            'info', 'time_arc'), 'a+')
-            size = get_folder_size(os.path.join(add_event[i]))
-            print size / 1024 ** 2
-            ti = Sta_req[j][0] + ',' + Sta_req[j][1] + ',' + \
-                Sta_req[j][2] + ',' + Sta_req[j][3] + ',' + \
-                str(time_arc.seconds) + ',' + \
-                str(time_arc.microseconds) + ',' + \
-                str(size / 1024 ** 2) + ',+,\n'
-            time_file.writelines(ti)
-            time_file.close()
-
-    except Exception, e:
-
-        t22 = datetime.now()
-
-        if input['time_arc'] == 'Y':
-            time_arc = t22 - t11
-            time_file = open(os.path.join(add_event[i], \
-                            'info', 'time_arc'), 'a')
-            size = get_folder_size(os.path.join(add_event[i]))
-            print size / 1024 ** 2
-            ti = Sta_req[j][0] + ',' + Sta_req[j][1] + ',' + \
-                Sta_req[j][2] + ',' + Sta_req[j][3] + ',' + \
-                str(time_arc.seconds) + ',' + \
-                str(time_arc.microseconds) + ',' + \
-                str(size / 1024 ** 2) + ',-,\n'
-            time_file.writelines(ti)
-            time_file.close()
-
-        if len(Sta_req[j]) != 0:
-            print dummy + '---' + Sta_req[j][0] + '.' + Sta_req[j][1] + \
-                            '.' + Sta_req[j][2] + '.' + Sta_req[j][3]
-            ee = 'arclink -- ' + dummy + '---' + str(i) + '-' + str(j) + \
-                '---' + Sta_req[j][0] + '.' + Sta_req[j][1] + '.' + \
-                Sta_req[j][2] + '.' + Sta_req[j][3] + \
-                '---' + str(e) + '\n'
-        elif len(Sta_req[j]) == 0:
-            ee = 'There is no available station for this event.'
-
-        Exception_file = open(os.path.join(add_event[i], \
-                        'info', 'exception'), 'a')
-        Exception_file.writelines(ee)
-        Exception_file.close()
-        print e
-
-
 def IRIS_update(input, address):
     """
     Initialize folders and required stations for IRIS update requests
@@ -2619,6 +2459,7 @@ def SAC_PAZ(trace, paz_file, address, BH_file='BH', unit='DIS', \
 def IRIS_ARC_merge(input, clients):
     """
     Call "merge_stream" function
+    """
 
     if input[clients + '_merge_auto'] == 'Y':
         global events
@@ -2769,4 +2610,5 @@ def __main__():
     sys.exit(status)
 
 if __name__ == "__main__":
-    __main__()
+    parse_commands()
+    #__main__()
