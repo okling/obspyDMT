@@ -32,7 +32,15 @@ def download_waveforms(channels, starttime, endtime, minimumlength,
         try:
             st = arc_client.getWaveform(*channel.split("."),
                 starttime=starttime, endtime=endtime, format="mseed")
-        except:
+        except Exception as e:
+            if e.message.lower() != "no data available":
+                msg = ("Failed to download %s from ArcLink because of an "
+                    "error (%s: %s)") % (channel, e.__class__.__name__,
+                    e.message)
+                if logger:
+                    logger.error(msg)
+                else:
+                    warnings.warn(msg)
             failed_downloads.append(channel)
             continue
         if len(st) != 1 or (st[0].stats.endtime - st[0].stats.starttime) \
@@ -58,11 +66,11 @@ def download_waveforms(channels, starttime, endtime, minimumlength,
     bk = "\n".join(to_bulkdatarequest(channels))
     iris_client = obspy.iris.Client()
     try:
-        st = iris_client.bulkdataselect(bk,
+        stream = iris_client.bulkdataselect(bk,
             minimumlength=(endtime - starttime) * 0.9)
     except:
-        pass
-    for tr in st:
+        stream = []
+    for tr in stream:
         if not tr.stats.npts or (tr.stats.endtime - tr.stats.starttime) < \
                 minimum_duration:
             continue

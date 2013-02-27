@@ -294,7 +294,7 @@ def __main__():
             os.makedirs(os.path.dirname(filename))
         trace.write(filename, format=args.format)
 
-    logger.info("Downloading %i waveform channels..." %
+    logger.info("Attempting to download %i waveform channels..." %
         len(channels_to_download))
     # Actually download the data.
     download_waveforms(channels_to_download, args.starttime, args.endtime,
