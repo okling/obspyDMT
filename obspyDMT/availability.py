@@ -100,6 +100,8 @@ def _get_iris_availability(min_lat, max_lat, min_lng, max_lng, starttime,
     availability = c.availability(starttime=starttime, endtime=endtime,
             minlat=min_lat, maxlat=max_lat, minlon=min_lng, maxlon=max_lng,
             output="xml")
+    if not availability:
+        return {}
 
     # Read the StationXML like format.
     root = etree.fromstring(availability)
@@ -174,7 +176,9 @@ def filter_channel_priority(channels, priorities=["HH[Z,N,E]", "BH[Z,N,E]",
 
 
 def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
-        logger=None, filter_location_fct=None):
+        station_pattern="*.*", channel_priority_list=["HH[Z,N,E]", "BH[Z,N,E]",
+        "MH[Z,N,E]", "EH[Z,N,E]", "LH[Z,N,E]"], logger=None,
+        filter_location_fct=None):
     """
     Get a set of all available IRIS and ArcLink channels for the requested time
     and spatial domain.
@@ -197,6 +201,8 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
     {"NET.STA.LOC.CHAN": {"latitude": 0.0, "longitude": 0.0}, ...}
     """
     availability = {}
+    if logger:
+        logger.info("Requesting inventory from IRIS...")
     try:
         iris_availability = _get_iris_availability(min_lat, max_lat, min_lng,
             max_lng, starttime, endtime)
@@ -208,6 +214,11 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
             logger.error(msg)
         else:
             warnings.warn(msg)
+        iris_availability = {}
+    if logger:
+        logger.info("Found %i channels in IRIS inventory." %
+            len(iris_availability))
+        logger.info("Requesting inventory from ArcLink...")
     try:
         arclink_availability = _get_arclink_availability(min_lat, max_lat,
             min_lng, max_lng, starttime, endtime)
@@ -219,7 +230,25 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
             logger.error(msg)
         else:
             warnings.warn(msg)
+        arclink_availability = {}
+    if logger:
+        logger.info("Found %i channels in ArcLink inventory." %
+            len(arclink_availability))
+    # Apply the station pattern.
+    availability = {key: value for (key, value) in availability.iteritems() if
+        fnmatch.fnmatch(key, station_pattern)}
+    # Some stations have latitude and longitude set to 0. This is clearly
+    # wrong. Those stations will be removed. Appears to be a problem with the
+    # datacenters.
+    availability = {key: value for (key, value) in availability.iteritems() if
+        value["latitude"] and value["longitude"]}
+    # Apply the channel priority list.
+    availability = filter_channel_priority(availability, channel_priority_list)
+    # Apply any additional station location restrictions.
     if filter_location_fct:
         availability = {key: value for (key, value) in availability.iteritems()
             if filter_location_fct(value.latitude, value.longitude)}
+    if logger:
+        logger.info("Found %i unique channels with suitable criteria across "
+            "data services." % len(availability))
     return availability
