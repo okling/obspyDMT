@@ -21,7 +21,7 @@ import warnings
 
 
 def _get_arclink_availability(min_lat, max_lat, min_lng, max_lng, starttime,
-        endtime):
+        endtime, arclink_user):
     """
     Get a set of all available Arclink channels for the requested time and
     spatial domain.
@@ -38,7 +38,7 @@ def _get_arclink_availability(min_lat, max_lat, min_lng, max_lng, starttime,
     ...     UTCDateTime())
     {"NET.STA.LOC.CHAN": {"latitude": 0.0, "longitude": 0.0}, ...}
     """
-    client = obspy.arclink.Client()
+    client = obspy.arclink.Client(user=arclink_user)
     # This command downloads network, station and channel information for
     # everything in the arclink network.
     everything = client.getNetworks(starttime, endtime)
@@ -176,9 +176,9 @@ def filter_channel_priority(channels, priorities=["HH[Z,N,E]", "BH[Z,N,E]",
 
 
 def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
-        station_pattern="*.*", channel_priority_list=["HH[Z,N,E]", "BH[Z,N,E]",
-        "MH[Z,N,E]", "EH[Z,N,E]", "LH[Z,N,E]"], logger=None,
-        filter_location_fct=None):
+        arclink_user, station_pattern="*.*",
+        channel_priority_list=["HH[Z,N,E]", "BH[Z,N,E]", "MH[Z,N,E]",
+        "EH[Z,N,E]", "LH[Z,N,E]"], logger=None, filter_location_fct=None):
     """
     Get a set of all available IRIS and ArcLink channels for the requested time
     and spatial domain.
@@ -221,7 +221,7 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
         logger.info("Requesting inventory from ArcLink...")
     try:
         arclink_availability = _get_arclink_availability(min_lat, max_lat,
-            min_lng, max_lng, starttime, endtime)
+            min_lng, max_lng, starttime, endtime, arclink_user)
         availability.update(arclink_availability)
     except Exception as e:
         msg = "Could not get availability from ArcLink\n"

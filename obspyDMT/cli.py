@@ -16,11 +16,14 @@ import colorama
 from datetime import datetime
 import logging
 from obspy import UTCDateTime
+import os
+import shelve
 import sys
 
 
 from obspyDMT import VERSION
 from obspyDMT.availability import get_availability
+from obspyDMT.waveforms import download_waveforms
 
 
 class Logger(object):
@@ -117,14 +120,22 @@ def parse_arguments():
         description="Download and manage large seismological datasets",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument("folder", type=str,
+        help="Folder where files are saved")
+
     parser.add_argument("--version", action="store_true",
         help="output version information and exit")
+    parser.add_argument("--arclink_user", type=str, required=True,
+        help="ArcLink user email. Please provide a valid one.")
 
     # Group waveform download options
     waveform_options = parser.add_argument_group("Waveform Download Options")
     waveform_options.add_argument("--minimumlength", default=0.9,
         type=fraction, help="The minimum length of a waveform segment as a "
         "fraction of the requested length")
+    waveform_options.add_argument("--format", default="mseed",
+        choices=["mseed", "sac", "gse2", "seisan", "segy"],
+        help="Final waveform file format")
 
     # Group all options related to station selection
     station_options = parser.add_argument_group("Station Selection Options")
@@ -177,14 +188,24 @@ def parse_arguments():
         #help="magnitude type. Available options depend on the catalog and "
             #"include Ml/MD, mb, Mw, ...")
 
-    args = parser.parse_args()
-
     # Print help message if no argument is given.
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
 
+    args = parser.parse_args()
+
     return args
+
+
+def _init_folders(*args):
+    """
+    Every folder in args will be created if it does not already exists.
+    """
+    for folder in args:
+        if os.path.exists(folder):
+            continue
+        os.makedirs(folder)
 
 
 def __main__():
@@ -195,8 +216,27 @@ def __main__():
         print("obspyDMT v%s" % VERSION)
         sys.exit(0)
 
+    # Init all necessary folders.
+    waveform_folder = os.path.join(args.folder, "waveforms")
+    station_folder = os.path.join(args.folder, "stations")
+    temp_folder = os.path.join(args.folder, ".temp")
+    shelve_file = os.path.join(temp_folder, "SHELVE")
+    _init_folders(args.folder, waveform_folder, station_folder, temp_folder)
+
+    # Any previously existing persistence shelve file is only valid if no
+    # arguments have been changed. Therefore check the existing shelve and
+    # compare the arguments.
+    dmt_shelve = shelve.open(shelve_file)
+    if "args" in dmt_shelve:
+        # If they are not identical any cached values are potentially invalid.
+        if args != dmt_shelve["args"]:
+            dmt_shelve.clear()
+    if "args" not in dmt_shelve:
+        dmt_shelve["args"] = args
+    dmt_shelve.close()
+
     # Init logger.
-    logger = Logger(log_filename="obspyDMT.log")
+    logger = Logger(log_filename=os.path.join(args.folder, "log.txt"))
 
     # Log some basic information
     logger.info(70 * "=")
@@ -207,11 +247,57 @@ def __main__():
     for key in keys:
         logger.info("\t%s: %s" % (str(key), str(getattr(args, key))))
 
-    # First get all channels.
-    channels = get_availability(args.station_rect[2], args.station_rect[3],
-        args.station_rect[0], args.station_rect[1], args.starttime,
-        args.endtime, args.station_pattern, logger=logger)
-    if not channels:
-        msg = "No matching channels found. Program will terminate."
-        logger.critical(msg)
-        sys.exit(1)
+    dmt_shelve = shelve.open(shelve_file)
+    if "channels" in dmt_shelve:
+        logger.info("Loading channel availability from cache...")
+        channels = dmt_shelve["channels"]
+        logger.info("Loaded %i unique channels." % len(channels))
+    else:
+        # First get all channels.
+        channels = get_availability(args.station_rect[2], args.station_rect[3],
+            args.station_rect[0], args.station_rect[1], args.starttime,
+            args.endtime, arclink_user=args.arclink_user,
+            station_pattern=args.station_pattern, logger=logger)
+        if not channels:
+            msg = "No matching channels found. Program will terminate."
+            logger.critical(msg)
+            dmt_shelve.close()
+            sys.exit(1)
+        dmt_shelve["channels"] = channels
+    dmt_shelve.close()
+
+    def get_channel_filename(channel_id):
+        """
+        Get the filename given a seed channel id.
+
+        File format and other things will be available via closures.
+        """
+        filename = "%s.%s" % (channel_id, args.format)
+        foldername = "%s_%s" % (args.starttime.strftime("%Y-%m-%dT%H-%M-%S"),
+            args.endtime.strftime("%Y-%m-%dT%H-%M-%S"))
+        return os.path.join(waveform_folder, foldername, filename)
+
+    # Now get a list of those channels that still need downloading.
+    channels_to_download = []
+    for chan in channels.iterkeys():
+        filename = get_channel_filename(chan)
+        if os.path.exists(filename):
+            continue
+        channels_to_download.append(chan)
+
+    def save_channel(stream):
+        """
+        Save a stream containing a single trace.
+        """
+        # Just a safety measure. This should not happen.
+        if len(stream) != 1:
+            msg = "Only streams containing one trace will be saved."
+            logger.error(msg)
+            return
+
+    logger.info("Downloading %i waveform channels..." %
+        len(channels_to_download))
+    # Actually download the data.
+    download_waveforms(channels_to_download, args.starttime, args.endtime,
+        args.minimumlength, save_stream_fct=save_channel,
+        arclink_user=args.arclink_user, logger=logger)
