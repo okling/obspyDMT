@@ -174,7 +174,7 @@ def filter_channel_priority(channels, priorities=["HH[Z,N,E]", "BH[Z,N,E]",
 
 
 def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
-        logger=None):
+        logger=None, filter_location_fct=None):
     """
     Get a set of all available IRIS and ArcLink channels for the requested time
     and spatial domain.
@@ -183,6 +183,11 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
     :param max_lat: Maximum latitude
     :param min_lng: Minimum longitude
     :param max_lng: Maximum longitude
+
+    :type filter_location_fct: function
+    :param filter_location_fct: An optional function
+        filter_location_fct(latitude, longitude) returning True if the location
+        should be accepted and False if not. Enables completely custom domains.
 
     :returns: A dictionary, with the channel names as keys. Each value is also
         a dictionary, containing latitude and longitude.
@@ -214,4 +219,7 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
             logger.error(msg)
         else:
             warnings.warn(msg)
+    if filter_location_fct:
+        availability = {key: value for (key, value) in availability.iteritems()
+            if filter_location_fct(value.latitude, value.longitude)}
     return availability

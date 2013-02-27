@@ -24,7 +24,7 @@ setup_config = dict(
     keywords=["obspyDMT", "ObsPy", "Seismology"],
     entry_points={
         'console_scripts': [
-            'obspyDMT = obspyDMT.obspyDMT:main'
+            'obspyDMT = obspyDMT.cli:__main__'
         ],
     },
     url="https://github.com/kasra-hosseini/obspyDMT",
