@@ -12,6 +12,7 @@ Queries ArcLink and the IRIS webservices.
     GNU General Public License, Version 3
     (http://www.gnu.org/licenses/gpl-3.0-standalone.html)
 """
+import fnmatch
 from lxml import etree
 from obspy import UTCDateTime
 import obspy.arclink
@@ -62,7 +63,7 @@ def _get_arclink_availability(min_lat, max_lat, min_lng, max_lng, starttime,
         longitude = value.longitude
         # Check if in bounds. If not continue.
         if not (min_lat <= latitude <= max_lat) or \
-            not (min_lng <= longitude <= max_lng):
+                not (min_lng <= longitude <= max_lng):
             continue
         stations_in_bounds[key] = {"latitude": latitude,
             "longitude": longitude}
@@ -111,7 +112,7 @@ def _get_iris_availability(min_lat, max_lat, min_lng, max_lng, starttime,
         station_code = station.get("sta_code").strip()
         # Check if in bounds. If not continue.
         if not (min_lat <= latitude <= max_lat) or \
-            not (min_lng <= longitude <= max_lng):
+                not (min_lng <= longitude <= max_lng):
             continue
         # Check all channel if they are defined for
         for channel in station.findall("Channel"):
@@ -122,12 +123,54 @@ def _get_iris_availability(min_lat, max_lat, min_lng, max_lng, starttime,
                     channel_starttime = UTCDateTime(extent.get("start"))
                     channel_endtime = UTCDateTime(extent.get("end"))
                     if (channel_starttime <= starttime <= channel_endtime) \
-                        and (channel_starttime <= endtime <= channel_endtime):
+                            and (channel_starttime <= endtime <=
+                            channel_endtime):
                         # Replace component with wildcard.
                         available_channels["%s.%s.%s.%s" % (network_code,
                             station_code, location_code, channel_code)] = \
                             {"latitude": latitude, "longitude": longitude}
     return available_channels
+
+
+def filter_channel_priority(channels, priorities=["HH[Z,N,E]", "BH[Z,N,E]",
+        "MH[Z,N,E]", "EH[Z,N,E]", "LH[Z,N,E]"]):
+    """
+    This function takes a dictionary containing channels keys and returns a new
+    one filtered with the given priorities list.
+
+    For each station all channels matching the first pattern in the list will
+    be retrieved. If one or more channels are found it stops. Otherwise it will
+    attempt to retrieve channels matching the next pattern. And so on.
+
+    :type channels: dict
+    :param channels: A dictionary containing keys in the form
+        "net.sta.loc.chan"
+    :type priorities: list of strings
+    :param priorities: The desired channels with descending priority. Channels
+        will be matched by fnmatch.fnmatch() so wildcards and sequences are
+        supported. The advisable form to request the three standard components
+        of a channel is "HH[Z,N,E]" to avoid getting e.g.  rotational
+        compononents.
+    :returns: A new dictionary containing only the filtered items.
+    """
+    filtered_channels = {}
+    all_locations = list(set([".".join(_i.split(".")[:3]) for _i in
+        channels.keys()]))
+    # Loop over all locations.
+    for location in all_locations:
+        chans = [_i.split(".")[-1] for _i in channels.keys() if
+            _i.startswith(location)]
+        current_channels = []
+        for pattern in priorities:
+            for chan in chans:
+                if fnmatch.fnmatch(chan, pattern):
+                    current_channels.append(chan)
+            if current_channels:
+                break
+        for chan in current_channels:
+            key = "%s.%s" % (location, chan)
+            filtered_channels[key] = channels[key]
+    return filtered_channels
 
 
 def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
