@@ -285,19 +285,18 @@ def __main__():
             continue
         channels_to_download.append(chan)
 
-    def save_channel(stream):
+    def save_channel(trace):
         """
-        Save a stream containing a single trace.
+        Save a single trace.
         """
-        # Just a safety measure. This should not happen.
-        if len(stream) != 1:
-            msg = "Only streams containing one trace will be saved."
-            logger.error(msg)
-            return
+        filename = get_channel_filename(trace.id)
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        trace.write(filename, format=args.format)
 
     logger.info("Downloading %i waveform channels..." %
         len(channels_to_download))
     # Actually download the data.
     download_waveforms(channels_to_download, args.starttime, args.endtime,
-        args.minimumlength, save_stream_fct=save_channel,
+        args.minimumlength, save_trace_fct=save_channel,
         arclink_user=args.arclink_user, logger=logger)
