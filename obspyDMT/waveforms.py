@@ -11,6 +11,7 @@ Queries ArcLink and the IRIS webservices.
     GNU General Public License, Version 3
     (http://www.gnu.org/licenses/gpl-3.0-standalone.html)
 """
+from obspy import Stream
 import obspy.arclink
 import obspy.iris
 import warnings
@@ -26,9 +27,57 @@ def download_waveforms(channels, starttime, endtime, minimumlength,
     successful_downloads = []
     minimum_duration = minimumlength * (endtime - starttime)
 
+    # Download first from IRIS
+    st = starttime.strftime("%Y-%jT%H:%M:%S")
+    et = endtime.strftime("%Y-%jT%H:%M:%S")
+
+    def to_bulkdatarequest(channels):
+        for channel in channels:
+            net, sta, loc, chan = channel.split(".")
+            if loc == "":
+                loc = "--"
+            yield "%s %s %s %s %s %s" % (net, sta, loc, chan, st, et)
+
+    bk = "\n".join(to_bulkdatarequest(channels))
+    iris_client = obspy.iris.Client()
+    if logger:
+        logger.debug("Starting IRIS bulkdataselect download...")
+    try:
+        stream = iris_client.bulkdataselect(bk,
+            minimumlength=(endtime - starttime) * 0.9)
+    except Exception as e:
+        if not e.message.lower().startswith("no waveform data available"):
+            msg = "Problem downloading data from IRIS\n"
+            err_msg = str(e)
+            msg += "\t%s: %s" % (e.__class__.__name__, err_msg)
+            if logger:
+                logger.error(msg)
+            else:
+                warnings.warn(msg)
+        else:
+            if logger:
+                logger.debug("No data available at IRIS for request.")
+        # Dummy stream to be able to use the same logic later on.
+        stream = Stream()
+
+    for tr in stream:
+        if not tr.stats.npts or (tr.stats.endtime - tr.stats.starttime) < \
+                minimum_duration:
+            continue
+        save_trace_fct(tr)
+        successful_downloads.append(tr.id)
+        if logger:
+            logger.info("Successfully downloaded %s from IRIS." % tr.id)
+
+    # Now get a list of all failed downloads.
+    failed_downloads = [_i for _i in channels if _i not in
+        successful_downloads]
+
     # Attempt to download via ArcLink first.
     arc_client = obspy.arclink.Client(user=arclink_user)
-    for channel in channels:
+    for channel in failed_downloads[:]:
+        if logger:
+            logger.debug("Starting ArcLink download for %s..." % channel)
         try:
             st = arc_client.getWaveform(*channel.split("."),
                 starttime=starttime, endtime=endtime, format="mseed")
@@ -41,44 +90,27 @@ def download_waveforms(channels, starttime, endtime, minimumlength,
                     logger.error(msg)
                 else:
                     warnings.warn(msg)
-            failed_downloads.append(channel)
+            else:
+                if logger:
+                    logger.debug("No data available at ArcLink for %s." %
+                        channel)
             continue
         if len(st) != 1 or (st[0].stats.endtime - st[0].stats.starttime) \
                 < minimum_duration:
-            failed_downloads.append(channel)
+            if logger:
+                if len(st) != 1:
+                    msg = "More than one Trace found."
+                    logger.debug(msg)
+                else:
+                    msg = ("Trace is only %.2f seconds long (%.2f seconds "
+                        "required)") % (st[0].stats.endtime -
+                        st[0].stats.starttime, minimum_duration)
+                    logger.debug(msg)
             continue
         save_trace_fct(st[0])
-        successful_downloads.append(st[0].id)
+        failed_downloads.remove(channel)
         if logger:
             logger.info("Successfully downloaded %s from ArcLink." % st[0].id)
-
-    # For the failed downloads, attempt again with IRIS.
-    st = starttime.strftime("%Y-%jT%H:%M:%S")
-    et = endtime.strftime("%Y-%jT%H:%M:%S")
-
-    def to_bulkdatarequest(failed_downloads):
-        for channel in channels:
-            net, sta, loc, chan = channel.split(".")
-            if loc == "":
-                loc = "--"
-            yield "%s %s %s %s %s %s" % (net, sta, loc, chan, st, et)
-
-    bk = "\n".join(to_bulkdatarequest(channels))
-    iris_client = obspy.iris.Client()
-    try:
-        stream = iris_client.bulkdataselect(bk,
-            minimumlength=(endtime - starttime) * 0.9)
-    except:
-        stream = []
-    for tr in stream:
-        if not tr.stats.npts or (tr.stats.endtime - tr.stats.starttime) < \
-                minimum_duration:
-            continue
-        save_trace_fct(tr)
-        successful_downloads.append(tr.id)
-        failed_downloads.remove(tr.id)
-        if logger:
-            logger.info("Successfully downloaded %s from IRIS." % tr.id)
 
     for chan in failed_downloads:
         msg = "Failed to download %s from %s to %s" % (chan, starttime,

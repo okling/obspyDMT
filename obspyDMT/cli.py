@@ -30,11 +30,20 @@ class Logger(object):
     """
     Simple logging class printing to the screen in color as well as to a file.
     """
-    def __init__(self, log_filename):
+    def __init__(self, log_filename, debug=False):
         FORMAT = "[%(asctime)-15s] %(levelname)s: %(message)s"
         logging.basicConfig(filename=log_filename, level=logging.DEBUG,
             format=FORMAT)
         self.logger = logging.getLogger("obspyDMT")
+        self.set_debug(debug)
+
+    def set_debug(self, value):
+        if value:
+            self._debug = True
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self._debug = False
+            self.logger.setLevel(logging.INFO)
 
     def critical(self, msg):
         print(colorama.Fore.WHITE + colorama.Back.RED +
@@ -56,7 +65,10 @@ class Logger(object):
         self.logger.info(msg)
 
     def debug(self, msg):
-        print(self._format_message("DEBUG", msg))
+        if not self._debug:
+            return
+        print(colorama.Fore.BLUE + self._format_message("DEBUG", msg) +
+            colorama.Style.RESET_ALL)
         self.logger.debug(msg)
 
     def _format_message(self, prefix, msg):
@@ -125,6 +137,8 @@ def parse_arguments():
 
     parser.add_argument("--version", action="store_true",
         help="output version information and exit")
+    parser.add_argument("--debug", action="store_true",
+        help="print debug messages")
     parser.add_argument("--arclink_user", type=str, required=True,
         help="ArcLink user email. Please provide a valid one.")
 
@@ -236,7 +250,8 @@ def __main__():
     dmt_shelve.close()
 
     # Init logger.
-    logger = Logger(log_filename=os.path.join(args.folder, "log.txt"))
+    logger = Logger(log_filename=os.path.join(args.folder, "log.txt"),
+        debug=args.debug)
 
     # Log some basic information
     logger.info(70 * "=")
@@ -296,7 +311,11 @@ def __main__():
 
     logger.info("Attempting to download %i (missing) waveform channels..." %
         len(channels_to_download))
-    # Actually download the data.
-    download_waveforms(channels_to_download, args.starttime, args.endtime,
-        args.minimumlength, save_trace_fct=save_channel,
-        arclink_user=args.arclink_user, logger=logger)
+    # Download in chunks of 100 channels.
+    channels_to_download.sort()
+    CHUNK_SIZE = 100
+    for chunk in (channels_to_download[_i: _i + CHUNK_SIZE] for _i in xrange(0,
+            len(channels_to_download), CHUNK_SIZE)):
+        download_waveforms(chunk, args.starttime, args.endtime,
+                args.minimumlength, save_trace_fct=save_channel,
+                arclink_user=args.arclink_user, logger=logger)
