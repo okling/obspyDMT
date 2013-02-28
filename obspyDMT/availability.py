@@ -215,7 +215,8 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
                 self.availability_dict.update(iris_availability)
             except Exception as e:
                 msg = "Could not get availability from IRIS\n"
-                msg += "\t%s: %s" % (e.__class__.__name__, e.message)
+                err_msg = str(e)
+                msg += "\t%s: %s" % (e.__class__.__name__, err_msg)
                 if logger:
                     logger.error(msg)
                 else:
@@ -236,7 +237,8 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
                 self.availability_dict.update(arclink_availability)
             except Exception as e:
                 msg = "Could not get availability from ArcLink\n"
-                msg += "\t%s: %s" % (e.__class__.__name__, e.message)
+                err_msg = str(e)
+                msg += "\t%s: %s" % (e.__class__.__name__, err_msg)
                 if logger:
                     logger.error(msg)
                 else:

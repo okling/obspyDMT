@@ -242,7 +242,7 @@ def __main__():
     logger.info(70 * "=")
     logger.info(70 * "=")
     logger.info("Launching obspyDMT version %s" % VERSION)
-    logger.info("Arguments:")
+    logger.info("Used Arguments:")
     keys = sorted(args.__dict__.keys())
     for key in keys:
         logger.info("\t%s: %s" % (str(key), str(getattr(args, key))))
@@ -294,7 +294,7 @@ def __main__():
             os.makedirs(os.path.dirname(filename))
         trace.write(filename, format=args.format)
 
-    logger.info("Attempting to download %i waveform channels..." %
+    logger.info("Attempting to download %i (missing) waveform channels..." %
         len(channels_to_download))
     # Actually download the data.
     download_waveforms(channels_to_download, args.starttime, args.endtime,
