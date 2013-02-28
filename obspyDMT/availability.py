@@ -17,6 +17,7 @@ from lxml import etree
 from obspy import UTCDateTime
 import obspy.arclink
 import obspy.iris
+import threading
 import warnings
 
 
@@ -200,40 +201,70 @@ def get_availability(min_lat, max_lat, min_lng, max_lng, starttime, endtime,
     ...     UTCDateTime())
     {"NET.STA.LOC.CHAN": {"latitude": 0.0, "longitude": 0.0}, ...}
     """
-    availability = {}
-    if logger:
-        logger.info("Requesting inventory from IRIS...")
-    try:
-        iris_availability = _get_iris_availability(min_lat, max_lat, min_lng,
-            max_lng, starttime, endtime)
-        availability.update(iris_availability)
-    except Exception as e:
-        msg = "Could not get availability from IRIS\n"
-        msg += "\t%s: %s" % (e.__class__.__name__, e.message)
-        if logger:
-            logger.error(msg)
-        else:
-            warnings.warn(msg)
-        iris_availability = {}
+    class IrisAvailabilityThread(threading.Thread):
+        def __init__(self, availability_dict):
+            self.availability_dict = availability_dict
+            super(IrisAvailabilityThread, self).__init__()
+
+        def run(self):
+            if logger:
+                logger.info("Requesting inventory from IRIS...")
+            try:
+                iris_availability = _get_iris_availability(min_lat, max_lat,
+                        min_lng, max_lng, starttime, endtime)
+                self.availability_dict.update(iris_availability)
+            except Exception as e:
+                msg = "Could not get availability from IRIS\n"
+                msg += "\t%s: %s" % (e.__class__.__name__, e.message)
+                if logger:
+                    logger.error(msg)
+                else:
+                    warnings.warn(msg)
+
+    class ArcLinkAvailabilityThread(threading.Thread):
+        def __init__(self, availability_dict):
+            self.availability_dict = availability_dict
+            super(ArcLinkAvailabilityThread, self).__init__()
+
+        def run(self):
+            if logger:
+                logger.info("Requesting inventory from ArcLink...")
+            try:
+                arclink_availability = _get_arclink_availability(min_lat,
+                    max_lat, min_lng, max_lng, starttime, endtime,
+                    arclink_user)
+                self.availability_dict.update(arclink_availability)
+            except Exception as e:
+                msg = "Could not get availability from ArcLink\n"
+                msg += "\t%s: %s" % (e.__class__.__name__, e.message)
+                if logger:
+                    logger.error(msg)
+                else:
+                    warnings.warn(msg)
+
+    # Launch both threads.
+    iris_availability = {}
+    iris_thread = IrisAvailabilityThread(iris_availability)
+    iris_thread.start()
+
+    arclink_availability = {}
+    arclink_thread = ArcLinkAvailabilityThread(arclink_availability)
+    arclink_thread.start()
+
+    # Join them.
+    iris_thread.join()
+    arclink_thread.join()
+
     if logger:
         logger.info("Found %i channels in IRIS inventory." %
             len(iris_availability))
-        logger.info("Requesting inventory from ArcLink...")
-    try:
-        arclink_availability = _get_arclink_availability(min_lat, max_lat,
-            min_lng, max_lng, starttime, endtime, arclink_user)
-        availability.update(arclink_availability)
-    except Exception as e:
-        msg = "Could not get availability from ArcLink\n"
-        msg += "\t%s: %s" % (e.__class__.__name__, e.message)
-        if logger:
-            logger.error(msg)
-        else:
-            warnings.warn(msg)
-        arclink_availability = {}
-    if logger:
         logger.info("Found %i channels in ArcLink inventory." %
             len(arclink_availability))
+
+    availability = {}
+    availability.update(iris_availability)
+    availability.update(arclink_availability)
+
     # Apply the station pattern.
     availability = {key: value for (key, value) in availability.iteritems() if
         fnmatch.fnmatch(key, station_pattern)}
