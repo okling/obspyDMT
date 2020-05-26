@@ -26,6 +26,10 @@ try:
     from obspy.clients.arclink import Client as Client_arclink
 except:
     from obspy.arclink import Client as Client_arclink
+try:
+    from obspy.clients.fdsn import RoutingClient
+except:
+    print("[WARNING] RoutingClient could not be imported.")
 from obspy.clients.syngine import Client as Client_syngine
 try:
     from obspy.geodetics.base import gps2dist_azimuth as gps2DistAzimuth
@@ -34,6 +38,7 @@ except:
         from obspy.geodetics import gps2DistAzimuth
     except:
         from obspy.core.util import gps2DistAzimuth
+from obspy import read_inventory
 import os
 import pickle
 
@@ -164,10 +169,13 @@ def fdsn_serial_parallel(stas_avail, event, input_dics, target_path,
     """
     print('%s -- event: %s' % (req_cli, target_path))
 
-    client_fdsn = Client_fdsn(base_url=req_cli,
-                              user=input_dics['username_fdsn'],
-                              password=input_dics['password_fdsn'])
-                              #debug=True)
+    if req_cli.lower() in ["iris-federator", "eida-routing"]:
+        client_fdsn = RoutingClient(req_cli)
+    else:
+        client_fdsn = Client_fdsn(base_url=req_cli,
+                                  user=input_dics['username_fdsn'],
+                                  password=input_dics['password_fdsn'])
+                                  #debug=True)
     client_syngine = Client_syngine()
 
     if input_dics['req_parallel']:
@@ -310,12 +318,29 @@ def fdsn_download_core(st_avail, event, input_dics, target_path,
             dummy = 'waveform'
             if (not os.path.isfile(os.path.join(target_path, 'raw', st_id)))\
                     or input_dics['force_waveform']:
-                client_fdsn.get_waveforms(st_avail[0], st_avail[1],
-                                          st_avail[2], st_avail[3],
-                                          t_start, t_end,
-                                          filename=os.path.join(target_path,
-                                                                'raw',
-                                                                st_id))
+                waveforms_path2write = os.path.join(target_path, 'raw', st_id)
+                if req_cli.lower() in ["iris-federator", "eida-routing"]:
+                    dl_waveform = \
+                        client_fdsn.get_waveforms(
+                            network=st_avail[0],
+                            station=st_avail[1],
+                            location=st_avail[2],
+                            channel=st_avail[3],
+                            starttime=t_start,
+                            endtime=t_end)
+                    if len(dl_waveform) > 0:
+                        dl_waveform.write(waveforms_path2write, format='mseed')
+                    else:
+                        raise Exception
+
+                else:
+                    client_fdsn.get_waveforms(network=st_avail[0],
+                                              station=st_avail[1],
+                                              location=st_avail[2],
+                                              channel=st_avail[3],
+                                              starttime=t_start,
+                                              endtime=t_end,
+                                              filename=waveforms_path2write)
                 identifier += 10
                 print('%s -- %s -- saving waveform for: %s  ---> DONE' \
                       % (info_station, req_cli, st_id))
@@ -327,15 +352,31 @@ def fdsn_download_core(st_avail, event, input_dics, target_path,
             if (not os.path.isfile(os.path.join(target_path, 'resp',
                                                 'STXML.' + st_id))) \
                     or input_dics['force_response']:
-                client_fdsn.get_stations(network=st_avail[0],
-                                         station=st_avail[1],
-                                         location=st_avail[2],
-                                         channel=st_avail[3],
-                                         starttime=t_start, endtime=t_end,
-                                         filename=os.path.join(
-                                             target_path, 'resp',
-                                             'STXML.%s' % st_id),
-                                         level='response')
+                resp_path2write = os.path.join(target_path, 'resp', 'STXML.%s' % st_id)
+                if req_cli.lower() in ["iris-federator", "eida-routing"]:
+                    dl_response = \
+                        client_fdsn.get_stations(
+                            network=st_avail[0],
+                            station=st_avail[1],
+                            location=st_avail[2],
+                            channel=st_avail[3],
+                            starttime=t_start,
+                            endtime=t_end,
+                            level='response')
+                    if len(dl_response) > 0:
+                        dl_response.write(resp_path2write, format="stationxml")
+                    else:
+                        raise Exception
+
+                else:
+                    client_fdsn.get_stations(network=st_avail[0],
+                                             station=st_avail[1],
+                                             location=st_avail[2],
+                                             channel=st_avail[3],
+                                             starttime=t_start,
+                                             endtime=t_end,
+                                             filename=resp_path2write,
+                                             level='response')
                 identifier += 100
                 print("%s -- %s -- saving response for: %s  ---> DONE" \
                       % (info_station, req_cli, st_id))
@@ -636,6 +677,15 @@ def arc_download_core(st_avail, event, input_dics, target_path,
                                          'DATALESS.%s' % st_id),
                             st_avail[0], st_avail[1], st_avail[2], st_avail[3],
                             t_start, t_end)
+                    if input_dics['dataless2xml']:
+                        try:
+                            datalessResp = read_inventory(
+                                os.path.join(target_path, 'resp', 'DATALESS.%s' % st_id))
+                            datalessResp.write(os.path.join(
+                                target_path, 'resp', 'STXML.%s' % st_id), format='STATIONXML')
+                            os.remove(os.path.join(target_path, 'resp', 'DATALESS.%s' % st_id))
+                        except Exception as error:
+                            pass
                     identifier += 100
                     print("%s -- %s -- saving response for: %s  ---> DONE" \
                           % (info_station, req_cli, st_id))
